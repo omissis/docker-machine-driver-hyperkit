@@ -10,13 +10,15 @@ define run-docker
 endef
 
 # Install Targets
+.PHONY: install
+
 install:
-	cp $(PWD)/build/docker-machine-driver-hyperkit /usr/local/bin/docker-machine-driver-hyperkit
-	sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit
+	@cp $(PWD)/build/docker-machine-driver-hyperkit /usr/local/bin/docker-machine-driver-hyperkit && \
+	sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit && \
 	sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
 
 # Build Targets
-.PHONY: clean vendor vendor-docker build build-all build-docker build-all-docker
+.PHONY: clean vendor vendor-docker build build-docker
 
 clean:
 	@rm -rf build/*; \
@@ -28,8 +30,8 @@ vendor:
 vendor-docker: --set-prj-dir-for-docker
 	$(call run-docker,make vendor)
 
-build: clean vendor build
-	go build -o build/docker-machine-driver-hyperkit
+build: clean vendor
+	@go build -o build/docker-machine-driver-hyperkit
 
 build-docker: --set-prj-dir-for-docker
 	$(call run-docker,make build)
@@ -38,7 +40,7 @@ build-docker: --set-prj-dir-for-docker
 .PHONY: fmt fmt-docker imports imports-docker cs cs-docker lint lint-docker
 
 fmt:
-	@find . -name *.go -type f -not -path '*/vendor/*' \
+	@find . -name '*.go' -type f -not -path '*/vendor/*' \
 	| sed 's/^\.\///g' \
 	| xargs -I {} bash -c 'echo "formatting {}.." && gofmt -w -s {}'
 
@@ -46,9 +48,9 @@ fmt-docker: --set-prj-dir-for-docker
 	$(call run-docker,make fmt)
 
 imports:
-	@find . -name *.go -type f -not -path '*/vendor/*' \
+	@find . -name '*.go' -type f -not -path '*/vendor/*' \
 	| sed 's/^\.\///g' \
-	| xargs -I {} bash -c 'echo "fixing imports for {}.." && goimports -v -w {}'
+	| xargs -I {} bash -c 'echo "fixing imports for {}.." && goimports -w {}'
 
 imports-docker: --set-prj-dir-for-docker
 	$(call run-docker,make imports)

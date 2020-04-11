@@ -279,7 +279,7 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 			Path:   pkgdrivers.GetDiskPath(d.BaseDriver),
 			Size:   d.DiskSize,
 			Format: "",
-			Trim:  true,
+			Trim:   true,
 		},
 	}
 
