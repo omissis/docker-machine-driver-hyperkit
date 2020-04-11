@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	golog "log"
 	"os"
 	"os/user"
 	"path"
@@ -265,9 +264,8 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 	if h.UUID == "" {
 		h.UUID = uuid.NewSHA1(uuid.Nil, []byte(d.GetMachineName())).String()
 	}
-	// This should stream logs from hyperkit, but doesn't seem to work.
-	logger := golog.New(os.Stderr, "hyperkit", golog.LstdFlags)
-	h.SetLogger(logger)
+
+	hyperkit.SetLogger(&hyperkit.StandardLogger{})
 
 	if vsockPorts, err := d.extractVSockPorts(); err != nil {
 		return nil, err
@@ -276,11 +274,12 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 		h.VSockPorts = vsockPorts
 	}
 
-	h.Disks = []hyperkit.DiskConfig{
-		{
+	h.Disks = []hyperkit.Disk{
+		&hyperkit.RawDisk{
 			Path:   pkgdrivers.GetDiskPath(d.BaseDriver),
 			Size:   d.DiskSize,
-			Driver: "virtio-blk",
+			Format: "",
+			Trim:  true,
 		},
 	}
 
@@ -313,8 +312,13 @@ func (d *Driver) Start() error {
 	log.Debugf("Generated MAC %s", mac)
 
 	log.Debugf("Starting with cmdline: %s", d.Cmdline)
-	if err := h.Start(d.Cmdline); err != nil {
-		return errors.Wrapf(err, "starting with cmd line: %s", d.Cmdline)
+	if cherr, err := h.Start(d.Cmdline); err != nil || cherr != nil {
+		if err != nil {
+			return errors.Wrapf(err, "starting with cmd line: %s", d.Cmdline)
+		}
+		if cherr != nil {
+			return fmt.Errorf("unhandled error channel") // TODO: handle error channel properly
+		}
 	}
 
 	if err := d.setupIP(mac); err != nil {
