@@ -1,3 +1,5 @@
+_PRJ_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+
 define run-docker
 	@docker run -it --rm --network local_default --link pp_sql \
 		-e GOOS=linux \
